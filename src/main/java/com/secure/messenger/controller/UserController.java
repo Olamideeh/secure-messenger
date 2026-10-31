@@ -23,7 +23,7 @@ public class UserController {
     public ResponseEntity<RegisterUserResponse> registerUser(
             @Valid @RequestBody RegisterUserRequest request) {
 
-        User user = userService.register(request.getPhoneNumber());
+        User user = userService.register(request.getPhoneNumber(),request.getRegion());
 
         RegisterUserResponse response = new RegisterUserResponse(user);
 

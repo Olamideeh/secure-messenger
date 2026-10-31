@@ -13,4 +13,6 @@ public class RegisterUserRequest {
 
     @NotBlank(message = "Phone number is required")
     private String phoneNumber;
+    @NotBlank(message = "Country region is required")
+    private String region;
 }
