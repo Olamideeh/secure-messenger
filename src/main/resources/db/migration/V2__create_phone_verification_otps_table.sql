@@ -1,0 +1,10 @@
+CREATE TABLE otp_verification (
+id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+attempts INTEGER NOT NULL DEFAULT 0
+CHECK (attempts >= 0 AND attempts <= 3),
+user_id UUID NOT NULL UNIQUE REFERENCES users(id),
+otp_hash VARCHAR(255) NOT NULL,
+created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+expires_at TIMESTAMPTZ NOT NULL,
+used_at TIMESTAMPTZ NULL
+);
