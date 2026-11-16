@@ -26,7 +26,12 @@ public class OtpVerification {
     @Column(nullable = false)
     private int attempts = 0;
 
-    @Column(nullable = false, updatable = false)
+    @Column(
+            name = "created_at",
+            nullable = false,
+            insertable = false,
+            updatable = false
+    )
     private Instant createdAt;
 
     @Column(nullable = false)

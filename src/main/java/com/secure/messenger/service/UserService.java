@@ -14,14 +14,15 @@ public class UserService {
     private final UserRepository userRepository;
     private final PhoneNumberNormalizer phoneNumberNormalizer;
     private final OtpVerificationService otpVerificationService;
-
+    private final SmsProvider smsProvider;
     public UserService(
             UserRepository userRepository,
             PhoneNumberNormalizer phoneNumberNormalizer,
-            OtpVerificationService otpVerificationService) {
+            OtpVerificationService otpVerificationService,SmsProvider smsProvider) {
         this.userRepository = userRepository;
         this.phoneNumberNormalizer = phoneNumberNormalizer;
         this.otpVerificationService = otpVerificationService;
+        this.smsProvider = smsProvider;
     }
 
     public boolean phoneNumberExists(String phoneNumber) {
@@ -43,8 +44,10 @@ public class UserService {
 
         User savedUser = userRepository.save(user);
 
-        otpVerificationService.generateAndSaveOtp(savedUser.getId());
+       String otp = otpVerificationService.generateAndSaveOtp(savedUser.getId());
 
+       String message = "Your secure messenger verification code is " + otp;
+       smsProvider.sendSms(savedUser.getPhoneNumber(), message);
         return savedUser;
     }
 }

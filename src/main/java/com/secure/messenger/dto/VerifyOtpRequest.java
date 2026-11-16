@@ -22,19 +22,7 @@ public class VerifyOtpRequest {
     @Pattern(regexp = "^[0-9]{6}$", message = "OTP must contain exactly 6 digits")
     private String otp;
 
-    public String getPhoneNumber() {
-        return phoneNumber;
-    }
+    @NotBlank(message = "Region is required")
+    private String region;
 
-    public void setPhoneNumber(String phoneNumber) {
-        this.phoneNumber = phoneNumber;
-    }
-
-    public String getOtp() {
-        return otp;
-    }
-
-    public void setOtp(String otp) {
-        this.otp = otp;
-    }
 }
