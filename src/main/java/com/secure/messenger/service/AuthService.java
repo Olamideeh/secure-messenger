@@ -16,14 +16,16 @@ public class AuthService {
     private final UserRepository userRepository;
     private final OtpVerificationService otpVerificationService;
     private final PhoneNumberNormalizer phoneNumberNormalizer;
+    private final SmsProvider smsProvider;
 
     public AuthService(
             UserRepository userRepository,
             OtpVerificationService otpVerificationService,
-            PhoneNumberNormalizer phoneNumberNormalizer) {
+            PhoneNumberNormalizer phoneNumberNormalizer,SmsProvider smsProvider) {
         this.userRepository = userRepository;
         this.otpVerificationService = otpVerificationService;
         this.phoneNumberNormalizer = phoneNumberNormalizer;
+        this.smsProvider = smsProvider;
     }
 
     @Transactional
@@ -75,4 +77,33 @@ public class AuthService {
 
         return true;
     }
+    public boolean resendOtp(String phoneNumber, String region) {
+
+        if (phoneNumber == null || phoneNumber.isBlank()) {
+            throw new InvalidPhoneNumberException("Invalid phone number");
+        }
+
+        String normalizedNumber =
+                phoneNumberNormalizer.normalize(phoneNumber, region);
+
+        Optional<User> userOptional =
+                userRepository.findByPhoneNumber(normalizedNumber);
+
+        if (userOptional.isEmpty()) {
+            return false;
+        }
+        User user = userOptional.get();
+        if (user.isPhoneVerified()) {
+            return false;
+        }
+        if (!otpVerificationService.canResendOtp(user.getId())) {
+            return false;
+        }
+
+        String otp = otpVerificationService.generateAndSaveOtp(user.getId());
+        String message = "your secure messenger verification code is " + otp;
+        smsProvider.sendSms(user.getPhoneNumber(),message);
+        return true;
+    }
+
 }

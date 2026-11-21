@@ -1,7 +1,6 @@
 package com.secure.messenger.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -33,6 +32,9 @@ public class OtpVerification {
             updatable = false
     )
     private Instant createdAt;
+
+    @Column(name = "last_sent_at", nullable = false)
+    private Instant lastSentAt;
 
     @Column(nullable = false)
     private Instant expiresAt;

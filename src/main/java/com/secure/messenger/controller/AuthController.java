@@ -1,8 +1,11 @@
 package com.secure.messenger.controller;
 
+import com.secure.messenger.dto.ResendOtpRequest;
+import com.secure.messenger.dto.ResendOtpResponse;
 import com.secure.messenger.dto.VerifyOtpRequest;
 import com.secure.messenger.dto.VerifyOtpResponse;
 import com.secure.messenger.service.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -30,5 +33,22 @@ public class AuthController{
         response.setMessage(verified ? "Phone number successfully verified" : "invalid or expired Otp");
 
         return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/resend-otp")
+    public ResponseEntity<ResendOtpResponse> resendOtp(@Valid @RequestBody ResendOtpRequest request){
+        boolean success = authService.resendOtp(
+                request.getPhoneNumber(),
+                request.getRegion()
+        );
+        ResendOtpResponse response = new ResendOtpResponse();
+        response.setSuccess(success);
+
+       if (success){
+       response.setMessage("OTP sent successfully");
+       } else {
+           response.setMessage ("Unable to resend otp, check ur details or try again later ");
+       }
+       return ResponseEntity.ok(response);
     }
 }

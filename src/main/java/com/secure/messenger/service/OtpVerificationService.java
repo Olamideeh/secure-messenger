@@ -27,6 +27,7 @@ public class OtpVerificationService {
 
     private static final int OTP_EXPIRY_MINUTES = 3;
     private static final int MAX_ATTEMPTS = 3;
+    private static final int RESEND_COOLDOWN_SECONDS = 60;
 
     @Value("${security.otp.hmac-secret}")
     private String otpHmacSecret;
@@ -93,6 +94,7 @@ public class OtpVerificationService {
         existingOtp.setOtpHash(hashOtp(otp));
         existingOtp.setUserId(userId);
         existingOtp.setExpiresAt(calculateExpiryTime());
+        existingOtp.setLastSentAt(Instant.now());
         existingOtp.setAttempts(0);
         existingOtp.setUsedAt(null);
 
@@ -115,7 +117,7 @@ public class OtpVerificationService {
             return false;
         }
 
-        if (otpVerification.getExpiresAt().isBefore(Instant.now())) {
+        if (!otpVerification.getExpiresAt().isAfter(Instant.now())) {
             return false;
         }
 
@@ -124,6 +126,7 @@ public class OtpVerificationService {
         }
 
         otpVerification.setAttempts(otpVerification.getAttempts() + 1);
+
 
         String submittedOtpHash = hashOtp(submittedOtp);
 
@@ -139,5 +142,17 @@ public class OtpVerificationService {
         otpVerificationRepository.save(otpVerification);
 
         return true;
+    }
+
+    // cool down checking method
+    public boolean canResendOtp (UUID userId){
+
+        OtpVerification otpVerification = otpVerificationRepository.findByUserId(userId).orElse(null);
+        if (otpVerification == null) {
+            return false;
+        }
+
+        Instant nextAllowedTime = otpVerification.getLastSentAt().plusSeconds(RESEND_COOLDOWN_SECONDS);
+        return !Instant.now().isBefore(nextAllowedTime);
     }
 }
