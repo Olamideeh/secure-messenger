@@ -3,10 +3,13 @@ package com.secure.messenger.entity;
 
 import com.secure.messenger.enums.ConversationMemberRole;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
-
+@Getter
+@Setter
 @Entity
 @Table(name = "conversation_members")
 public class ConversationMember {
