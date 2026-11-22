@@ -1,0 +1,151 @@
+[1mdiff --git a/src/main/java/com/secure/messenger/entity/User.java b/src/main/java/com/secure/messenger/entity/User.java[m
+[1mindex 435b7f7..7550bc3 100644[m
+[1m--- a/src/main/java/com/secure/messenger/entity/User.java[m
+[1m+++ b/src/main/java/com/secure/messenger/entity/User.java[m
+[36m@@ -37,5 +37,4 @@[m [mpublic class User {[m
+ [m
+     protected User() {[m
+     }[m
+[31m-[m
+ }[m
+[1mdiff --git a/src/main/resources/db/migration/V4__create_contacts_and_conversations.sql b/src/main/resources/db/migration/V4__create_contacts_and_conversations.sql[m
+[1mindex 94b7aaa..aca0665 100644[m
+[1m--- a/src/main/resources/db/migration/V4__create_contacts_and_conversations.sql[m
+[1m+++ b/src/main/resources/db/migration/V4__create_contacts_and_conversations.sql[m
+[36m@@ -1,65 +1,27 @@[m
+ [m
+[31m--- =========================================[m
+[31m--- 1. CONTACT REQUESTS[m
+[31m--- =========================================[m
+[31m-[m
+ CREATE TABLE contact_requests ([m
+[31m-                                  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),[m
+[31m-[m
+[31m-                                  sender_id UUID NOT NULL REFERENCES users(id),[m
+[31m-[m
+[31m-                                  recipient_id UUID NOT NULL REFERENCES users(id),[m
+[31m-[m
+[31m-                                  status VARCHAR(20) NOT NULL,[m
+[31m-[m
+[31m-                                  created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,[m
+[31m-[m
+[31m-                                  responded_at TIMESTAMPTZ,[m
+[31m-[m
+[31m-                                  CONSTRAINT chk_different_users[m
+[31m-                                      CHECK (sender_id <> recipient_id),[m
+[31m-[m
+[31m-                                  CONSTRAINT chk_contact_request_status[m
+[31m-                                      CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED'))[m
+[32m+[m[32m    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),[m
+[32m+[m[32m    sender_id UUID NOT NULL REFERENCES users(id),[m
+[32m+[m[32m    recipient_id UUID NOT NULL REFERENCES users(id),[m
+[32m+[m[32m    status VARCHAR(20) NOT NULL[m
+[32m+[m[32m    CHECK (status IN ('PENDING', 'ACCEPTED', 'REJECTED')),[m
+[32m+[m[32m    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,[m
+[32m+[m[32m    responded_at TIMESTAMPTZ,[m
+[32m+[m[32m    CONSTRAINT chk_different_users[m
+[32m+[m[32m    CHECK (sender_id <> recipient_id)[m
+ );[m
+ [m
+[31m-[m
+[31m--- Prevent reciprocal or duplicate pending requests.[m
+[31m--- LEAST/GREATEST create a canonical unordered user pair.[m
+[31m-[m
+[31m-CREATE UNIQUE INDEX uq_pending_contact_request_pair[m
+[31m-    ON contact_requests ([m
+[31m-                         LEAST(sender_id, recipient_id),[m
+[31m-                         GREATEST(sender_id, recipient_id)[m
+[31m-        )[m
+[31m-    WHERE status = 'PENDING';[m
+[31m-[m
+[31m-[m
+[31m--- =========================================[m
+[31m--- 2. CONTACTS[m
+[31m--- =========================================[m
+[31m-[m
+ CREATE TABLE contacts ([m
+[31m-                          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),[m
+[31m-[m
+[31m-                          user_low_id UUID NOT NULL REFERENCES users(id),[m
+[31m-[m
+[31m-                          user_high_id UUID NOT NULL REFERENCES users(id),[m
+[31m-[m
+[31m-                          created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,[m
+[31m-[m
+[31m-                          CONSTRAINT chk_contact_order[m
+[31m-                              CHECK (user_low_id < user_high_id),[m
+[31m-[m
+[31m-                          CONSTRAINT uq_contact_pair[m
+[31m-                              UNIQUE (user_low_id, user_high_id)[m
+[32m+[m[32m    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),[m
+[32m+[m[32m    user_low_id UUID NOT NULL REFERENCES users(id),[m
+[32m+[m[32m    user_high_id UUID NOT NULL REFERENCES users(id),[m
+[32m+[m[32m    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,[m
+[32m+[m[32m    CONSTRAINT chk_contact_order[m
+[32m+[m[32m             CHECK ( user_low_id < user_high_id ),[m
+[32m+[m[32m    CONSTRAINT uq_contact_pair[m
+[32m+[m[32m             UNIQUE (user_low_id , user_high_id)[m
+ );[m
+ [m
+[31m-[m
+[31m--- =========================================[m
+[31m--- 3. CONVERSATIONS[m
+[31m--- =========================================[m
+[31m-[m
+ CREATE TABLE conversations ([m
+                                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),[m
+ [m
+[36m@@ -91,36 +53,27 @@[m [mCREATE TABLE conversations ([m
+                                                AND direct_user_high_id IS NULL[m
+                                            )[m
+                                        )[m
+[31m-);[m
+[31m-[m
+ [m
+[31m--- Prevent duplicate direct conversations for the same pair.[m
+ [m
+[31m-CREATE UNIQUE INDEX uq_direct_conversation_pair[m
+[31m-    ON conversations (direct_user_low_id, direct_user_high_id)[m
+[31m-    WHERE conversation_type = 'DIRECT';[m
+[32m+[m[32m                                       CREATE UNIQUE INDEX uq_direct_conversation_pair[m
+[32m+[m[32m                                       ON conversations (direct_user_low_id, direct_user_high_id)[m
+[32m+[m[32m                                       WHERE conversation_type = 'DIRECT';[m
+ [m
+[31m-[m
+[31m--- =========================================[m
+[31m--- 4. CONVERSATION MEMBERS[m
+[31m--- =========================================[m
+[32m+[m[32m);[m
+ [m
+ CREATE TABLE conversation_members ([m
+[31m-                                      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),[m
+[31m-[m
+[31m-                                      conversation_id UUID NOT NULL REFERENCES conversations(id),[m
+[31m-[m
+[31m-                                      user_id UUID NOT NULL REFERENCES users(id),[m
+[31m-[m
+[31m-                                      role VARCHAR(20) NOT NULL,[m
+[31m-[m
+[31m-                                      joined_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,[m
+[31m-[m
+[31m-                                      left_at TIMESTAMPTZ,[m
+[32m+[m[32m    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),[m
+[32m+[m[32m    conversation_id UUID NOT NULL REFERENCES conversations(id),[m
+[32m+[m[32m    user_id UUID NOT NULL REFERENCES users(id),[m
+[32m+[m[32m    role VARCHAR(20) NOT NULL ,[m
+[32m+[m[32m    joined_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,[m
+[32m+[m[32m    left_at TIMESTAMPTZ ,[m
+[32m+[m
+[32m+[m[32m    CONSTRAINT  chk_conversation_member[m
+[32m+[m[32m                CHECK ( role IN ('MEMBER','ADMIN')),[m
+[32m+[m
+[32m+[m[32m    CONSTRAINT uq_conversation_member[m
+[32m+[m[32m                UNIQUE (conversation_id,user_id)[m
+[32m+[m[32m);[m
+ [m
+[31m-                                      CONSTRAINT chk_conversation_member_role[m
+[31m-                                          CHECK (role IN ('MEMBER', 'ADMIN')),[m
+ [m
+[31m-                                      CONSTRAINT uq_conversation_member[m
+[31m-                                          UNIQUE (conversation_id, user_id)[m
+[31m-);[m
