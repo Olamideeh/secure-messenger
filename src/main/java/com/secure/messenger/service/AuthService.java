@@ -5,8 +5,8 @@ import com.secure.messenger.entity.User;
 import com.secure.messenger.exception.InvalidPhoneNumberException;
 import com.secure.messenger.repository.UserRepository;
 import com.secure.messenger.util.PhoneNumberNormalizer;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -21,7 +21,9 @@ public class AuthService {
     public AuthService(
             UserRepository userRepository,
             OtpVerificationService otpVerificationService,
-            PhoneNumberNormalizer phoneNumberNormalizer,SmsProvider smsProvider) {
+            PhoneNumberNormalizer phoneNumberNormalizer,
+            SmsProvider smsProvider
+    ) {
         this.userRepository = userRepository;
         this.otpVerificationService = otpVerificationService;
         this.phoneNumberNormalizer = phoneNumberNormalizer;
@@ -32,51 +34,59 @@ public class AuthService {
     public boolean verifyPhoneNumber(
             String phoneNumber,
             String region,
-            String otp) {
+            String otp
+    ) {
+        return verifyAndLoadUser(phoneNumber, region, otp) != null;
+    }
 
-        // Validate phone number
+    @Transactional
+    public User verifyPhoneNumberAndGetUser(
+            String phoneNumber,
+            String region,
+            String otp
+    ) {
+        return verifyAndLoadUser(phoneNumber, region, otp);
+    }
+
+    private User verifyAndLoadUser(
+            String phoneNumber,
+            String region,
+            String otp
+    ) {
         if (phoneNumber == null || phoneNumber.isBlank()) {
-            throw new InvalidPhoneNumberException(
-                    "Invalid phone number"
-            );
+            throw new InvalidPhoneNumberException("Invalid phone number");
         }
 
-        // Normalize phone number
         String normalizedNumber =
                 phoneNumberNormalizer.normalize(phoneNumber, region);
 
-        // Find user
         Optional<User> userOptional =
                 userRepository.findByPhoneNumber(normalizedNumber);
 
         if (userOptional.isEmpty()) {
-            return false;
+            return null;
         }
 
         User user = userOptional.get();
 
-        // Check whether phone number is already verified
-        if (user.isPhoneVerified()) {
-            return true;
-        }
-
-        // Verify submitted OTP
         boolean verified = otpVerificationService.verifyOtp(
                 user.getId(),
                 otp
         );
 
         if (!verified) {
-            return false;
+            return null;
         }
 
-        // Mark phone number as verified
-        user.setPhoneVerified(true);
+        if (!user.isPhoneVerified()) {
+            user.setPhoneVerified(true);
+            userRepository.save(user);
+        }
 
-        userRepository.save(user);
-
-        return true;
+        return user;
     }
+
+    @Transactional
     public boolean resendOtp(String phoneNumber, String region) {
 
         if (phoneNumber == null || phoneNumber.isBlank()) {
@@ -92,18 +102,21 @@ public class AuthService {
         if (userOptional.isEmpty()) {
             return false;
         }
+
         User user = userOptional.get();
-        if (user.isPhoneVerified()) {
-            return false;
-        }
+
         if (!otpVerificationService.canResendOtp(user.getId())) {
             return false;
         }
 
-        String otp = otpVerificationService.generateAndSaveOtp(user.getId());
-        String message = "your secure messenger verification code is " + otp;
-        smsProvider.sendSms(user.getPhoneNumber(),message);
+        String otp =
+                otpVerificationService.generateAndSaveOtp(user.getId());
+
+        String message =
+                "Your secure messenger verification code is " + otp;
+
+        smsProvider.sendSms(user.getPhoneNumber(), message);
+
         return true;
     }
-
 }
