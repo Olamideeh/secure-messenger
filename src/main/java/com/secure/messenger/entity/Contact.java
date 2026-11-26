@@ -2,10 +2,13 @@
 package com.secure.messenger.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
-
+@Getter
+@Setter
 @Entity
 @Table(name = "contacts")
 public class Contact {
